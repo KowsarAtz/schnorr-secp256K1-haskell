@@ -1,6 +1,8 @@
 module Main where
 
-import qualified MyLib (greet)
+import MyLib (createContext, verify)
 
 main :: IO ()
-main = MyLib.greet
+main = do
+  x <- createContext verify
+  print x
