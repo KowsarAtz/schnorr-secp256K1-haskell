@@ -2,7 +2,6 @@
 {-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
--- TODO: review exports
 module Implementations (hexToBytes, verifySignature, serializedSignature, messageHash, uncompressedPublicKey) where
 
 import           Control.DeepSeq         (NFData)
@@ -46,70 +45,24 @@ packByteString :: (Ptr a, CSize) -> IO ByteString
 packByteString (b, l) =
     BS.packCStringLen (castPtr b, fromIntegral l)
 
--- FIXME: keep both?
-decodeHex :: ConvertibleStrings a ByteString => a -> Maybe ByteString
-decodeHex str = case B16.decodeBase16 $ cs str of
-    Right bs -> Just bs
-    Left _   -> Nothing
-
 hexToBytes :: String -> BS.ByteString
 hexToBytes = fromRight undefined . B16.decodeBase16 . B8.pack
 
 newtype CompactSignature = CompactSignature {getCompactSignature :: ByteString}
-    deriving (Eq, Generic, NFData)
 newtype RecoverableSignature = RecoverableSignature {getRecoverableSignature :: ByteString}
-    deriving (Eq, Generic, NFData)
 newtype SerializedSignature = SerializedSignature {getSerializedSignature :: ByteString}
-    deriving (Eq, Generic, NFData)
 newtype PublicKey = PublicKey {getPublicKey :: ByteString}
-    deriving (Eq, Generic, NFData)
-newtype UncompressedPublicKey = UncompressedPublicKey {getUncompressedPublicKey :: ByteString}
-    deriving (Eq, Generic, NFData) -- TODO: remove?
+newtype UncompressedPublicKey = UncompressedPublicKey {getUncompressedPublicKey :: ByteString} deriving Eq
 newtype MessageHash = MessageHash {getMessageHash :: ByteString}
-    deriving (Eq, Generic, NFData)
-
-instance Serialize CompactSignature where
-    put (CompactSignature bs) = putByteString bs
-    get = CompactSignature <$> getByteString 64
-
-instance Serialize RecoverableSignature where
-    put (RecoverableSignature bs) = putByteString bs
-    get = RecoverableSignature <$> getByteString 65
-
-instance Serialize SerializedSignature where
-    put (SerializedSignature bs) = putByteString bs
-    get = SerializedSignature <$> getByteString 65
-
-instance Serialize PublicKey where
-    put (PublicKey bs) = putByteString bs
-    get = PublicKey <$> getByteString 64
-
-instance Serialize UncompressedPublicKey where
-    put (UncompressedPublicKey bs) = putByteString bs
-    get = UncompressedPublicKey <$> getByteString 65
-
-instance Serialize MessageHash where
-    put (MessageHash bs) = putByteString bs
-    get = MessageHash <$> getByteString 65
 
 compactSignature :: ByteString -> Maybe CompactSignature
 compactSignature bs
     | BS.length bs == 64 = Just (CompactSignature bs)
     | otherwise = Nothing
 
-recoverableSignature :: ByteString -> Maybe RecoverableSignature
-recoverableSignature bs
-    | BS.length bs == 65 = Just (RecoverableSignature bs)
-    | otherwise = Nothing
-
 serializedSignature :: ByteString -> Maybe SerializedSignature
 serializedSignature bs
     | BS.length bs == 65 = Just (SerializedSignature bs)
-    | otherwise = Nothing
-
-publicKey :: ByteString -> Maybe PublicKey
-publicKey bs
-    | BS.length bs == 64 = Just (PublicKey bs)
     | otherwise = Nothing
 
 uncompressedPublicKey :: ByteString -> Maybe UncompressedPublicKey
@@ -122,23 +75,6 @@ messageHash bs
     | BS.length bs == 32 = Just (MessageHash bs)
     | otherwise = Nothing
 
-instance Show CompactSignature where
-    showsPrec _ = shows . B16.encodeBase16 . getCompactSignature
-
-instance Show RecoverableSignature where
-    showsPrec _ = shows . B16.encodeBase16 . getRecoverableSignature
-
-instance Show SerializedSignature where
-    showsPrec _ = shows . B16.encodeBase16 . getSerializedSignature
-
-instance Show PublicKey where
-    showsPrec _ = shows . B16.encodeBase16 . getPublicKey
-
-instance Show UncompressedPublicKey where
-    showsPrec _ = shows . B16.encodeBase16 . getUncompressedPublicKey
-
-instance Show MessageHash where
-    showsPrec _ = shows . B16.encodeBase16 . getMessageHash
 
 parseSerializedSignature :: SerializedSignature -> Maybe (CompactSignature, Int)
 parseSerializedSignature serSig = do

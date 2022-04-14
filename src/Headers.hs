@@ -1,5 +1,6 @@
 module Headers
-  ( contextCreate,
+  ( 
+    contextCreate,
     verify,
     ecPubkeyParse,
     ecPubkeySerialize,
@@ -12,14 +13,10 @@ module Headers
   )
 where
 
--- TODO:
---  reorganize
---  remove unnecessary comments
-
 import           Foreign   (Ptr)
 import           Foreign.C (CInt (..), CSize (..), CUChar, CUInt (..))
 
-data LCtx -- FIXME: change name
+data Ctx
 
 data PublicKey64
 
@@ -29,7 +26,7 @@ data CompactSignature64
 
 data MessageHash32
 
-type Context = Ptr LCtx
+type Context = Ptr Ctx
 
 type Ret = CInt
 
