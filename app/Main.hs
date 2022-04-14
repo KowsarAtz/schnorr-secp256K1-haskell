@@ -1,9 +1,10 @@
 module Main where
 
-import           Ecrecover          (hexToBytes, messageHash,
-                                     serializedSignature, uncompressedPublicKey,
-                                     verifySignature)
-import           Ecrecover.Internal (contextCreate, verifyContext)
+import           SchnorrSecp256K1          (hexToBytes, messageHash,
+                                            serializedSignature,
+                                            uncompressedPublicKey,
+                                            verifySignature)
+import           SchnorrSecp256K1.Internal (contextCreate, verifyContext)
 
 testVerify :: IO ()
 testVerify = do

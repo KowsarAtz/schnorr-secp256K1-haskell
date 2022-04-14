@@ -1,4 +1,4 @@
-module Ecrecover.Internal
+module SchnorrSecp256K1.Internal
   (
     contextCreate,
     verifyContext,

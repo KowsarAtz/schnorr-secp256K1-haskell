@@ -1,19 +1,19 @@
-module Ecrecover (hexToBytes, verifySignature, serializedSignature, messageHash, uncompressedPublicKey) where
+module SchnorrSecp256K1 (hexToBytes, verifySignature, serializedSignature, messageHash, uncompressedPublicKey) where
 
-import           Data.ByteString        (ByteString)
-import qualified Data.ByteString        as BS
-import qualified Data.ByteString.Base16 as B16
-import qualified Data.ByteString.Char8  as B8
-import qualified Data.ByteString.Unsafe as BU
-import           Data.Either            (fromRight)
-import           Ecrecover.Internal     (Context, ecPubkeySerialize,
-                                         ecdsaRecover, isSuccess,
-                                         parseCompactRecoverableSignature,
-                                         uncompressedFormat)
-import           Foreign                (Ptr, Storable (peek, poke), alloca,
-                                         allocaBytes, castPtr)
-import           Foreign.C              (CSize (..))
-import           System.IO.Unsafe       (unsafePerformIO)
+import           Data.ByteString           (ByteString)
+import qualified Data.ByteString           as BS
+import qualified Data.ByteString.Base16    as B16
+import qualified Data.ByteString.Char8     as B8
+import qualified Data.ByteString.Unsafe    as BU
+import           Data.Either               (fromRight)
+import           Foreign                   (Ptr, Storable (peek, poke), alloca,
+                                            allocaBytes, castPtr)
+import           Foreign.C                 (CSize (..))
+import           SchnorrSecp256K1.Internal (Context, ecPubkeySerialize,
+                                            ecdsaRecover, isSuccess,
+                                            parseCompactRecoverableSignature,
+                                            uncompressedFormat)
+import           System.IO.Unsafe          (unsafePerformIO)
 
 unsafeUseByteString :: ByteString -> ((Ptr a, CSize) -> IO b) -> IO b
 unsafeUseByteString bs f =
