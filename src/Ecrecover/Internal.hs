@@ -1,15 +1,13 @@
-module Headers
-  ( 
+module Ecrecover.Internal
+  (
     contextCreate,
-    verify,
-    ecPubkeyParse,
+    verifyContext,
     ecPubkeySerialize,
     ecdsaRecover,
     parseCompactRecoverableSignature,
     isSuccess,
-    RecoverableSignature65,
-    Context,
-    uncompressed
+    uncompressedFormat,
+    Context
   )
 where
 
@@ -36,14 +34,11 @@ type ContextType = CUInt
 
 type SerializationType = CUInt
 
-verify :: ContextType
-verify = 0x0101
+verifyContext :: ContextType
+verifyContext = 0x0101
 
-compressed :: SerializationType
-compressed = 0x0102
-
-uncompressed :: SerializationType
-uncompressed = 0x0002
+uncompressedFormat :: SerializationType
+uncompressedFormat = 0x0002
 
 isSuccess :: Ret -> Bool
 isSuccess 0 = False
@@ -55,23 +50,10 @@ foreign import ccall safe "secp256k1.h secp256k1_context_create"
     ContextType ->
     IO Context
 
--- TODO: remove?
-foreign import ccall safe "secp256k1.h secp256k1_ec_pubkey_parse"
-  ecPubkeyParse ::
-    Context ->
-    Ptr PublicKey64 ->
-    -- | encoded public key array
-    Ptr CUChar ->
-    -- | size of encoded public key array
-    CSize ->
-    IO Ret
-
 foreign import ccall safe "secp256k1.h secp256k1_ec_pubkey_serialize"
   ecPubkeySerialize ::
     Context ->
-    -- | array for encoded public key, must be large enough
     Ptr CUChar ->
-    -- | size of encoded public key, will be updated
     Ptr CSize ->
     Ptr PublicKey64 ->
     SerializationType ->

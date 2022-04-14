@@ -1,45 +1,24 @@
-{-# LANGUAGE DeriveGeneric              #-}
-{-# LANGUAGE FlexibleContexts           #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+module Ecrecover (hexToBytes, verifySignature, serializedSignature, messageHash, uncompressedPublicKey) where
 
-module Implementations (hexToBytes, verifySignature, serializedSignature, messageHash, uncompressedPublicKey) where
-
-import           Control.DeepSeq         (NFData)
-import           Control.Monad           (unless, (<=<))
-import           Data.ByteString         (ByteString)
-import qualified Data.ByteString         as BS
-import qualified Data.ByteString.Base16  as B16
-import qualified Data.ByteString.Char8   as B8
-import qualified Data.ByteString.Unsafe  as BU
-import           Data.Either             (fromRight)
-import           Data.Hashable           (Hashable (..))
-import           Data.Maybe              (fromMaybe)
-import           Data.Serialize          (Serialize (..), getByteString,
-                                          putByteString)
-import           Data.String             (IsString (..))
-import           Data.String.Conversions (ConvertibleStrings, cs)
-import           Foreign                 (Ptr, Storable (peek, poke), alloca,
-                                          allocaBytes, castPtr, free,
-                                          mallocBytes)
-import           Foreign.C               (CSize (..))
-import           GHC.Generics            (Generic)
-import           Headers                 (Context, RecoverableSignature65,
-                                          ecPubkeySerialize, ecdsaRecover,
-                                          isSuccess,
-                                          parseCompactRecoverableSignature,
-                                          uncompressed, verify)
-import           System.IO.Unsafe        (unsafePerformIO)
-import           Text.Read               (Lexeme (String), lexP, parens, pfail,
-                                          readPrec)
+import           Data.ByteString        (ByteString)
+import qualified Data.ByteString        as BS
+import qualified Data.ByteString.Base16 as B16
+import qualified Data.ByteString.Char8  as B8
+import qualified Data.ByteString.Unsafe as BU
+import           Data.Either            (fromRight)
+import           Ecrecover.Internal     (Context, ecPubkeySerialize,
+                                         ecdsaRecover, isSuccess,
+                                         parseCompactRecoverableSignature,
+                                         uncompressedFormat)
+import           Foreign                (Ptr, Storable (peek, poke), alloca,
+                                         allocaBytes, castPtr)
+import           Foreign.C              (CSize (..))
+import           System.IO.Unsafe       (unsafePerformIO)
 
 unsafeUseByteString :: ByteString -> ((Ptr a, CSize) -> IO b) -> IO b
 unsafeUseByteString bs f =
     BU.unsafeUseAsCStringLen bs $ \(b, l) ->
     f (castPtr b, fromIntegral l)
-
-unsafePackByteString :: (Ptr a, CSize) -> IO ByteString
-unsafePackByteString (b, l) =
-    BU.unsafePackMallocCStringLen (castPtr b, fromIntegral l)
 
 packByteString :: (Ptr a, CSize) -> IO ByteString
 packByteString (b, l) =
@@ -92,15 +71,14 @@ deserializeRecoverable context serializedSig = do
         Nothing -> Nothing
         Just parsedSerializedSig -> do
             unsafePerformIO $ unsafeUseByteString (getCompactSignature compactedSig) $ \(compactedSigIn, _) -> do
-                recoverableSigOut <- mallocBytes 65
-                result <- parseCompactRecoverableSignature context recoverableSigOut compactedSigIn (fromIntegral recoveryId)
-                if isSuccess result
-                    then do
-                        bs <- unsafePackByteString (recoverableSigOut, 65)
-                        return (Just (RecoverableSignature bs))
-                    else do
-                        free recoverableSigOut
-                        return Nothing
+                allocaBytes 65 $ \recoverableSigOut -> do
+                    result <- parseCompactRecoverableSignature context recoverableSigOut compactedSigIn (fromIntegral recoveryId)
+                    if isSuccess result
+                        then do
+                            bs <- packByteString (recoverableSigOut, 65)
+                            return (Just (RecoverableSignature bs))
+                        else do
+                            return Nothing
             where
                 compactedSig = fst parsedSerializedSig
                 recoveryId = snd parsedSerializedSig
@@ -111,7 +89,7 @@ serializePublicKey context pubKey = unsafePerformIO $
     alloca $ \lenPtr -> do
         poke lenPtr $ fromIntegral len
         allocaBytes len $ \pubKeyOut -> do
-            result <- ecPubkeySerialize context pubKeyOut lenPtr pubKeyIn uncompressed
+            result <- ecPubkeySerialize context pubKeyOut lenPtr pubKeyIn uncompressedFormat
             finalLen <- peek lenPtr
             if isSuccess result
                 then do
@@ -126,15 +104,14 @@ recover :: Context -> RecoverableSignature -> MessageHash -> Maybe PublicKey
 recover context recoverableSig msgHash = unsafePerformIO $
     unsafeUseByteString (getRecoverableSignature recoverableSig) $ \(recoverableSigIn, _) ->
     unsafeUseByteString (getMessageHash msgHash) $ \(msgHashIn, _) -> do
-        publicKeyOut <- mallocBytes 64
-        result <- ecdsaRecover context publicKeyOut recoverableSigIn msgHashIn
-        if isSuccess result
-            then do
-                bs <- unsafePackByteString (publicKeyOut, 64)
-                return (Just (PublicKey bs))
-            else do
-                free publicKeyOut
-                return Nothing
+        allocaBytes 64 $ \publicKeyOut -> do
+            result <- ecdsaRecover context publicKeyOut recoverableSigIn msgHashIn
+            if isSuccess result
+                then do
+                    bs <- packByteString (publicKeyOut, 64)
+                    return (Just (PublicKey bs))
+                else do
+                    return Nothing
 
 verifySignature :: Context -> SerializedSignature -> MessageHash -> UncompressedPublicKey -> Maybe Bool
 verifySignature context serializedSig msgHash referencePubKey = do

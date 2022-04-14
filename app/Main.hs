@@ -1,12 +1,13 @@
 module Main where
 
-import           Headers         (contextCreate, verify)
-import           Implementations (hexToBytes, messageHash, serializedSignature,
-                                  uncompressedPublicKey, verifySignature)
+import           Ecrecover          (hexToBytes, messageHash,
+                                     serializedSignature, uncompressedPublicKey,
+                                     verifySignature)
+import           Ecrecover.Internal (contextCreate, verifyContext)
 
 testVerify :: IO ()
 testVerify = do
-  ctx <- contextCreate verify
+  ctx <- contextCreate verifyContext
   case serializedSignature serSigBS of
     Nothing -> error "An error occurred while reading signature"
     Just serSig -> case messageHash msgHashBS of
