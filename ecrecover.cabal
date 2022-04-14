@@ -54,6 +54,7 @@ executable ecrecover
     -- other-extensions:
     build-depends:    
         base ^>=4.14.3.0,
+        bytestring >=0.10.8 && <0.12, 
         ecrecover
                     
     hs-source-dirs:   app

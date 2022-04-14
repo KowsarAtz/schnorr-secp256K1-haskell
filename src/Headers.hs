@@ -7,7 +7,8 @@ module Headers
     parseCompactRecoverableSignature,
     isSuccess,
     RecoverableSignature65,
-    Context
+    Context,
+    uncompressed
   )
 where
 
@@ -43,6 +44,9 @@ verify = 0x0101
 
 compressed :: SerializationType
 compressed = 0x0102
+
+uncompressed :: SerializationType
+uncompressed = 0x0002
 
 isSuccess :: Ret -> Bool
 isSuccess 0 = False
