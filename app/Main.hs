@@ -3,7 +3,7 @@ module Main where
 import           SchnorrSecp256K1          (hexToBytes, messageHash,
                                             serializedSignature,
                                             uncompressedPublicKey,
-                                            verifySignature)
+                                            verifySignature, publicKeyToEthAddress)
 import           SchnorrSecp256K1.Internal (contextCreate, verifyContext)
 
 testVerify :: IO ()
@@ -27,5 +27,14 @@ testVerify = do
     msgHashBS = hexToBytes "9902e8fe012a92c68276dfb7584a339587f8ffa859357e5a26a96af33ee25346"
     pubKeyBS = hexToBytes "043d5c2875c9bd116875a71a5db64cffcb13396b163d039b1d932782489180433476a4352a2add00ebb0d5c94c515b72eb10f1fd8f3f03b42f4a2b255bfc9aa9e3"
 
+testPubKeyToEthAddress :: IO ()
+testPubKeyToEthAddress = case uncompressedPublicKey pubKeyBS of
+  Nothing -> error "An error occurred while parsing public key"
+  Just upk -> case publicKeyToEthAddress upk of
+    Nothing -> error "An error occurred while getting eth address from public key"
+    Just ea -> print ea
+  where
+    pubKeyBS = hexToBytes "043d5c2875c9bd116875a71a5db64cffcb13396b163d039b1d932782489180433476a4352a2add00ebb0d5c94c515b72eb10f1fd8f3f03b42f4a2b255bfc9aa9e3"
+
 main :: IO ()
-main = testVerify
+main = testPubKeyToEthAddress

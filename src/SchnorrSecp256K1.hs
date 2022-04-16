@@ -1,5 +1,6 @@
-module SchnorrSecp256K1 (hexToBytes, verifySignature, serializedSignature, messageHash, uncompressedPublicKey) where
+module SchnorrSecp256K1 (hexToBytes, verifySignature, serializedSignature, messageHash, uncompressedPublicKey, publicKeyToEthAddress) where
 
+import           Crypto.Hash.Keccak        (keccak256)
 import           Data.ByteString           (ByteString)
 import qualified Data.ByteString           as BS
 import qualified Data.ByteString.Base16    as B16
@@ -33,6 +34,7 @@ newtype SerializedSignature = SerializedSignature {getSerializedSignature :: Byt
 newtype PublicKey = PublicKey {getPublicKey :: ByteString}
 newtype UncompressedPublicKey = UncompressedPublicKey {getUncompressedPublicKey :: ByteString} deriving Eq
 newtype MessageHash = MessageHash {getMessageHash :: ByteString}
+newtype EthAddress = EthAddress {getEthAddress :: ByteString}
 
 compactSignature :: ByteString -> Maybe CompactSignature
 compactSignature bs
@@ -54,6 +56,14 @@ messageHash bs
     | BS.length bs == 32 = Just (MessageHash bs)
     | otherwise = Nothing
 
+ethAddress :: ByteString -> Maybe EthAddress
+ethAddress bs
+    | BS.length bs == 20 = Just (EthAddress bs)
+    | otherwise = Nothing
+
+-- TODO: remove?
+instance Show EthAddress where
+    showsPrec _ = shows . B16.encodeBase16 . getEthAddress
 
 parseSerializedSignature :: SerializedSignature -> Maybe (CompactSignature, Int)
 parseSerializedSignature serSig = do
@@ -122,3 +132,18 @@ verifySignature context serializedSig msgHash referencePubKey = do
             case serializePublicKey context publicKey of
                 Nothing -> Nothing
                 Just uncompressedPubKey -> Just (referencePubKey == uncompressedPubKey)
+
+
+getTailOfLength :: ByteString -> Int -> Maybe ByteString
+getTailOfLength bs length
+  | length < 0 = Nothing
+  | length > bsLength = Nothing
+  | length == bsLength = Just bs
+  | otherwise = getTailOfLength (BS.tail bs) length
+  where
+      bsLength = BS.length bs
+
+publicKeyToEthAddress :: UncompressedPublicKey -> Maybe EthAddress
+publicKeyToEthAddress pubKey = ethAddress =<< getTailOfLength pubKeyHash 20
+    where
+        pubKeyHash = keccak256 $ BS.tail $ getUncompressedPublicKey pubKey
