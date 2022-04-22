@@ -21,7 +21,8 @@ library
         base16 >=0.3.0.1,
         string-conversions ==0.4.*,
         binary ==0.8.8.0,
-        keccak>=0.2.0
+        keccak >=0.2.0,
+        data-dword == 0.3.2.1
     hs-source-dirs:   src
     default-language: Haskell2010
     pkgconfig-depends:
